@@ -3,7 +3,7 @@ set -eu
 cd "${0:A:h}/.."
 APP="$PWD/build/DualSense Cursor.app"
 mkdir -p "$APP/Contents/MacOS" "$PWD/build/module-cache"
-xcrun swiftc Sources/main.swift Sources/DualSenseInput.swift Sources/DualSenseReport.swift -o "$APP/Contents/MacOS/DualSenseCursor" -module-cache-path "$PWD/build/module-cache" -framework AppKit -framework IOKit -framework ApplicationServices -target "$(uname -m)-apple-macosx12.0" -O
+xcrun swiftc Sources/main.swift Sources/DualSenseInput.swift Sources/DualSenseReport.swift Sources/CursorMotion.swift -o "$APP/Contents/MacOS/DualSenseCursor" -module-cache-path "$PWD/build/module-cache" -framework AppKit -framework IOKit -framework ApplicationServices -target "$(uname -m)-apple-macosx12.0" -O
 cat > "$APP/Contents/Info.plist" <<'PLIST'
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">

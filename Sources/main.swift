@@ -10,9 +10,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var enabledItem: NSMenuItem!
     private var permissionItem: NSMenuItem!
     private let input = DualSenseInput()
-    private var contactID: UInt8?
+    private var motion = CursorMotion()
     private var timer: Timer?
-    private var previous: (x: Float, y: Float, time: TimeInterval)?
     private var mouseDown = false
     private var enabled = true
     private var lastPermissionState: String?
@@ -82,29 +81,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func receive(_ report: DualSenseReport) {
         click(report.clicked)
-        guard report.touching else {
-            previous = nil
-            contactID = nil
-            activity.title = "Touchpad: finger lifted · receiving input"
-            return
-        }
-        if contactID != report.contactID { previous = nil }
-        contactID = report.contactID
-        touch(x: report.x, y: report.y)
-    }
-
-    private func touch(x: Float, y: Float) {
-        activity.title = String(format: "Touchpad: %.2f, %.2f", x, y)
-        guard enabled, canPostMouseEvents else { previous = nil; return }
-        let now = ProcessInfo.processInfo.systemUptime
-        defer { previous = (x, y, now) }
-        guard let old = previous, now - old.time < 0.25 else { return }
-        let dx = Double(x - old.x) * 650 * sensitivity
-        let dy = -Double(y - old.y) * 365 * sensitivity
-        guard abs(dx) < 300 * sensitivity, abs(dy) < 200 * sensitivity else { return }
+        activity.title = report.touching ? String(format: "Touchpad: %.2f, %.2f", report.x, report.y) : "Touchpad: finger lifted · receiving input"
+        guard enabled, canPostMouseEvents else { motion.reset(); return }
+        guard let delta = motion.update(x: report.x, y: report.y, touching: report.touching,
+                                        contactID: report.contactID, clicked: report.clicked,
+                                        time: ProcessInfo.processInfo.systemUptime, sensitivity: sensitivity) else { return }
         guard let current = CGEvent(source: nil)?.location else { return }
         let mainTop = NSScreen.screens.first?.frame.maxY ?? 0
-        let desired = CGPoint(x: current.x + dx, y: current.y + dy)
+        let desired = CGPoint(x: current.x + delta.x, y: current.y + delta.y)
         // Clamp to an actual display, including layouts with gaps between screens.
         let frames = NSScreen.screens.map { CGRect(x: $0.frame.minX, y: mainTop - $0.frame.maxY, width: $0.frame.width, height: $0.frame.height) }
         let point = frames.map { frame in
@@ -128,8 +112,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private func resetPointer() {
         if mouseDown { postButton(false) }
         mouseDown = false
-        previous = nil
-        contactID = nil
+        motion.reset()
     }
 
     @objc private func toggleEnabled() {
@@ -144,7 +127,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         sensitivity = value
         UserDefaults.standard.set(value, forKey: "sensitivity")
         sender.menu?.items.forEach { $0.state = $0 === sender ? .on : .off }
-        previous = nil
+        motion.reset()
     }
 
     @objc private func requestPermission() {
