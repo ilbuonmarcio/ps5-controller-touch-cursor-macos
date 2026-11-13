@@ -18,3 +18,7 @@ The app reads DualSense HID reports through IOKit, enabling full Bluetooth repor
 Protocol references: [SDL's DualSense driver](https://github.com/libsdl-org/SDL/blob/main/src/joystick/hidapi/SDL_hidapi_ps5.c) documents enabling enhanced Bluetooth reporting, and [Linux's PlayStation driver](https://github.com/torvalds/linux/blob/master/drivers/hid/hid-playstation.c) documents report layouts. The Swift implementation is independent.
 
 The app is locally ad hoc signed. Rebuilding may require renewing its Accessibility permission. No network access or third party dependencies are used.
+
+## License
+
+This project is licensed under the [MIT License](LICENSE).
